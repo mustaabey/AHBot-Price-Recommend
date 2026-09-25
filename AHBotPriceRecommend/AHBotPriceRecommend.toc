@@ -1,0 +1,8 @@
+## Interface: 30300
+## Title: AHBot Price Recommend
+## Notes: Safe AH sell price for mod-ah-bot.
+## Author: mustaabey
+## Version: 1.0
+
+BuyPrices.lua
+AHBotPriceRecommend.lua
