@@ -39,18 +39,32 @@ if safeBidSlider.SetObeyStepOnDrag then safeBidSlider:SetObeyStepOnDrag(true) en
 safeBidSlider:SetWidth(200)
 _G[safeBidSlider:GetName() .. "Low"]:SetText("1%")
 _G[safeBidSlider:GetName() .. "High"]:SetText("200%")
-_G[safeBidSlider:GetName() .. "Text"]:SetText("Safe Bid Percent (" .. SAFE_BID_PERCENT .. "%)")
 safeBidSlider.tooltipText = "Percentage of the calculated max bid to recommend as the safe bid/buyout price. Default 95%."
+
+local function UpdateSafeBidSliderText()
+    local color
+    if SAFE_BID_PERCENT >= 100 then
+        color = "|cffff2020"
+    elseif SAFE_BID_PERCENT > 95 then
+        color = "|cffffd700"
+    else
+        color = "|cff20ff20"
+    end
+    _G[safeBidSlider:GetName() .. "Text"]:SetText(color .. "Safe Bid Percent (" .. SAFE_BID_PERCENT .. "%)|r")
+end
+UpdateSafeBidSliderText()
+
 safeBidSlider:SetScript("OnValueChanged", function(self, value)
     value = math.floor(value + 0.5)
     SAFE_BID_PERCENT = value
     AHBotPriceRecommendDB.safeBidPercent = SAFE_BID_PERCENT
-    _G[self:GetName() .. "Text"]:SetText("Safe Bid Percent (" .. SAFE_BID_PERCENT .. "%)")
+    UpdateSafeBidSliderText()
 end)
 
 panel.refresh = function()
     useBuyPriceCheck:SetChecked(USE_BUY_PRICE)
     safeBidSlider:SetValue(SAFE_BID_PERCENT)
+    UpdateSafeBidSliderText()
 end
 panel:SetScript("OnShow", panel.refresh)
 
