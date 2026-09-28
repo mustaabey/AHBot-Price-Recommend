@@ -6,6 +6,7 @@
 -- Saved in the AHBotPriceRecommendDB SavedVariable.
 -- =========================================================================
 local USE_BUY_PRICE = true
+local SAFE_BID_PERCENT = 95
 
 -- Settings panel (Interface Options > AddOns)
 local panel = CreateFrame("Frame", "AHBotPriceRecommendOptionsPanel", UIParent)
@@ -30,8 +31,26 @@ useBuyPriceCheck:SetScript("OnClick", function(self)
     AHBotPriceRecommendDB.useBuyPrice = USE_BUY_PRICE
 end)
 
+local safeBidSlider = CreateFrame("Slider", "AHBotPriceRecommendSafeBidSlider", panel, "OptionsSliderTemplate")
+safeBidSlider:SetPoint("TOPLEFT", useBuyPriceCheck, "BOTTOMLEFT", 4, -32)
+safeBidSlider:SetMinMaxValues(1, 200)
+safeBidSlider:SetValueStep(1)
+if safeBidSlider.SetObeyStepOnDrag then safeBidSlider:SetObeyStepOnDrag(true) end
+safeBidSlider:SetWidth(200)
+_G[safeBidSlider:GetName() .. "Low"]:SetText("1%")
+_G[safeBidSlider:GetName() .. "High"]:SetText("200%")
+_G[safeBidSlider:GetName() .. "Text"]:SetText("Safe Bid Percent (" .. SAFE_BID_PERCENT .. "%)")
+safeBidSlider.tooltipText = "Percentage of the calculated max bid to recommend as the safe bid/buyout price. Default 95%."
+safeBidSlider:SetScript("OnValueChanged", function(self, value)
+    value = math.floor(value + 0.5)
+    SAFE_BID_PERCENT = value
+    AHBotPriceRecommendDB.safeBidPercent = SAFE_BID_PERCENT
+    _G[self:GetName() .. "Text"]:SetText("Safe Bid Percent (" .. SAFE_BID_PERCENT .. "%)")
+end)
+
 panel.refresh = function()
     useBuyPriceCheck:SetChecked(USE_BUY_PRICE)
+    safeBidSlider:SetValue(SAFE_BID_PERCENT)
 end
 panel:SetScript("OnShow", panel.refresh)
 
@@ -48,6 +67,11 @@ panel:SetScript("OnEvent", function(self, event, addonName)
         AHBotPriceRecommendDB.useBuyPrice = true
     end
     USE_BUY_PRICE = AHBotPriceRecommendDB.useBuyPrice
+
+    if AHBotPriceRecommendDB.safeBidPercent == nil then
+        AHBotPriceRecommendDB.safeBidPercent = 95
+    end
+    SAFE_BID_PERCENT = AHBotPriceRecommendDB.safeBidPercent
 end)
 
 local function FormatMoney(copper)
@@ -103,9 +127,10 @@ local function AttachAHBotPriceRecommend(tooltip)
         count = focus.count
     end
 
-    -- Calculate safe bid prices (95% of max bid)
-    local safeBidSingle = math.floor(singleMaxBid * 0.95)
-    local safeBidStack = math.floor(singleMaxBid * count * 0.95)
+    -- Calculate safe bid prices (SAFE_BID_PERCENT% of max bid)
+    local safeBidRatio = SAFE_BID_PERCENT / 100
+    local safeBidSingle = math.floor(singleMaxBid * safeBidRatio)
+    local safeBidStack = math.floor(singleMaxBid * count * safeBidRatio)
 
     tooltip:AddLine(" ")
     tooltip:AddDoubleLine("|cff00ff00AHPriceRec Buyout:|r", FormatMoney(safeBidSingle))
