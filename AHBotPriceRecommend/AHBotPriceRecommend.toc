@@ -5,5 +5,5 @@
 ## Version: 1.1
 ## SavedVariables: AHBotPriceRecommendDB
 
-BuyPrices.lua
+AHBotPriceRecommend_BuyPrices.lua
 AHBotPriceRecommend.lua

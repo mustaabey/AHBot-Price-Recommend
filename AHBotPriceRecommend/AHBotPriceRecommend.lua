@@ -65,13 +65,15 @@ local resetDefaultsButton = CreateFrame("Button", "AHBotPriceRecommendResetDefau
 resetDefaultsButton:SetPoint("TOPLEFT", safeBidSlider, "BOTTOMLEFT", -4, -24)
 resetDefaultsButton:SetSize(140, 22)
 resetDefaultsButton:SetText("Reset to Defaults")
-resetDefaultsButton:SetScript("OnClick", function()
+local function ResetToDefaults()
     USE_BUY_PRICE = true
     SAFE_BID_PERCENT = 95
     AHBotPriceRecommendDB.useBuyPrice = USE_BUY_PRICE
     AHBotPriceRecommendDB.safeBidPercent = SAFE_BID_PERCENT
     panel.refresh()
-end)
+end
+resetDefaultsButton:SetScript("OnClick", ResetToDefaults)
+panel.default = ResetToDefaults
 
 panel.refresh = function()
     useBuyPriceCheck:SetChecked(USE_BUY_PRICE)
@@ -148,9 +150,12 @@ local function AttachAHBotPriceRecommend(tooltip)
 
     -- Stack size check in bag
     local count = 1
-    local focus = GetMouseFocus()
-    if focus and focus.count then
-        count = focus.count
+    if tooltip == GameTooltip then
+        local focus = GetMouseFocus()
+        local focusCount = focus and tonumber(focus.count)
+        if focusCount and focusCount > 1 then
+            count = focusCount
+        end
     end
 
     -- Calculate safe bid prices (SAFE_BID_PERCENT% of max bid)
