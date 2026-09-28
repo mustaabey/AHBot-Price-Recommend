@@ -2,8 +2,53 @@
 -- mod-ah-bot.conf settings according to your configuration:
 -- AuctionHouseBot.UseBuyPriceForBuyer = 1 -> USE_BUY_PRICE = true
 -- AuctionHouseBot.UseBuyPriceForBuyer = 0 -> USE_BUY_PRICE = false
+-- Configurable in-game: Interface > AddOns > AHBot Price Recommend
+-- Saved in the AHBotPriceRecommendDB SavedVariable.
 -- =========================================================================
 local USE_BUY_PRICE = true
+
+-- Settings panel (Interface Options > AddOns)
+local panel = CreateFrame("Frame", "AHBotPriceRecommendOptionsPanel", UIParent)
+panel.name = "AHBot Price Recommend"
+
+local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+title:SetPoint("TOPLEFT", 16, -16)
+title:SetText("AHBot Price Recommend")
+
+local subtitle = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+subtitle:SetPoint("RIGHT", panel, "RIGHT", -32, 0)
+subtitle:SetJustifyH("LEFT")
+subtitle:SetText("Match these settings to your server's mod-ah-bot.conf.")
+
+local useBuyPriceCheck = CreateFrame("CheckButton", "AHBotPriceRecommendUseBuyPriceCheck", panel, "InterfaceOptionsCheckButtonTemplate")
+useBuyPriceCheck:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", -2, -12)
+_G[useBuyPriceCheck:GetName() .. "Text"]:SetText("Use vendor Buy Price (AuctionHouseBot.UseBuyPriceForBuyer = 1)")
+useBuyPriceCheck.tooltipText = "Checked: base price is the item's vendor BuyPrice (SellPrice * 4 if unknown).\nUnchecked: base price is the item's vendor SellPrice."
+useBuyPriceCheck:SetScript("OnClick", function(self)
+    USE_BUY_PRICE = self:GetChecked() and true or false
+    AHBotPriceRecommendDB.useBuyPrice = USE_BUY_PRICE
+end)
+
+panel.refresh = function()
+    useBuyPriceCheck:SetChecked(USE_BUY_PRICE)
+end
+panel:SetScript("OnShow", panel.refresh)
+
+InterfaceOptions_AddCategory(panel)
+
+-- Load saved settings
+panel:RegisterEvent("ADDON_LOADED")
+panel:SetScript("OnEvent", function(self, event, addonName)
+    if addonName ~= "AHBotPriceRecommend" then return end
+    self:UnregisterEvent("ADDON_LOADED")
+
+    AHBotPriceRecommendDB = AHBotPriceRecommendDB or {}
+    if AHBotPriceRecommendDB.useBuyPrice == nil then
+        AHBotPriceRecommendDB.useBuyPrice = true
+    end
+    USE_BUY_PRICE = AHBotPriceRecommendDB.useBuyPrice
+end)
 
 local function FormatMoney(copper)
     if not copper or copper <= 0 then return "0c" end

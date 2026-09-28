@@ -50,14 +50,14 @@ Tooltip lines:
 
 ## Configuration
 
-Open `AHBotPriceRecommend/AHBotPriceRecommend.lua` and set `USE_BUY_PRICE` to match your server's `mod-ah-bot.conf`:
+In game, open **Interface → AddOns → AHBot Price Recommend** and set the **Use vendor Buy Price** option to match your server's `mod-ah-bot.conf`:
 
 | `mod-ah-bot.conf` | Addon setting |
 | --- | --- |
-| `AuctionHouseBot.UseBuyPriceForBuyer = 1` | `local USE_BUY_PRICE = true` |
-| `AuctionHouseBot.UseBuyPriceForBuyer = 0` | `local USE_BUY_PRICE = false` |
+| `AuctionHouseBot.UseBuyPriceForBuyer = 1` | Checked (default) |
+| `AuctionHouseBot.UseBuyPriceForBuyer = 0` | Unchecked |
 
-Reload the UI (`/reload`) after changing it.
+The change applies right away. It is saved per account in the `AHBotPriceRecommendDB` SavedVariable.
 
 ## License
 
