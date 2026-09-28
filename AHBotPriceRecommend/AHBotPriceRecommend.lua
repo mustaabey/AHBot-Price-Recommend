@@ -2,8 +2,105 @@
 -- mod-ah-bot.conf settings according to your configuration:
 -- AuctionHouseBot.UseBuyPriceForBuyer = 1 -> USE_BUY_PRICE = true
 -- AuctionHouseBot.UseBuyPriceForBuyer = 0 -> USE_BUY_PRICE = false
+-- Configurable in-game: Interface > AddOns > AHBot Price Recommend
+-- Saved in the AHBotPriceRecommendDB SavedVariable.
 -- =========================================================================
 local USE_BUY_PRICE = true
+local SAFE_BID_PERCENT = 95
+
+-- Settings panel (Interface Options > AddOns)
+local panel = CreateFrame("Frame", "AHBotPriceRecommendOptionsPanel", UIParent)
+panel.name = "AHBot Price Recommend"
+
+local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+title:SetPoint("TOPLEFT", 16, -16)
+title:SetText("AHBot Price Recommend")
+
+local subtitle = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+subtitle:SetPoint("RIGHT", panel, "RIGHT", -32, 0)
+subtitle:SetJustifyH("LEFT")
+subtitle:SetText("Match these settings to your server's mod-ah-bot.conf.")
+
+local useBuyPriceCheck = CreateFrame("CheckButton", "AHBotPriceRecommendUseBuyPriceCheck", panel, "InterfaceOptionsCheckButtonTemplate")
+useBuyPriceCheck:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", -2, -12)
+_G[useBuyPriceCheck:GetName() .. "Text"]:SetText("Use vendor Buy Price (AuctionHouseBot.UseBuyPriceForBuyer = 1)")
+useBuyPriceCheck.tooltipText = "Checked: base price is the item's vendor BuyPrice (SellPrice * 4 if unknown).\nUnchecked: base price is the item's vendor SellPrice."
+useBuyPriceCheck:SetScript("OnClick", function(self)
+    USE_BUY_PRICE = self:GetChecked() and true or false
+    AHBotPriceRecommendDB.useBuyPrice = USE_BUY_PRICE
+end)
+
+local safeBidSlider = CreateFrame("Slider", "AHBotPriceRecommendSafeBidSlider", panel, "OptionsSliderTemplate")
+safeBidSlider:SetPoint("TOPLEFT", useBuyPriceCheck, "BOTTOMLEFT", 4, -32)
+safeBidSlider:SetMinMaxValues(1, 200)
+safeBidSlider:SetValueStep(1)
+if safeBidSlider.SetObeyStepOnDrag then safeBidSlider:SetObeyStepOnDrag(true) end
+safeBidSlider:SetWidth(200)
+_G[safeBidSlider:GetName() .. "Low"]:SetText("1%")
+_G[safeBidSlider:GetName() .. "High"]:SetText("200%")
+safeBidSlider.tooltipText = "Percentage of the calculated max bid to recommend as the safe bid/buyout price. Default 95%."
+
+local function UpdateSafeBidSliderText()
+    local color
+    if SAFE_BID_PERCENT >= 100 then
+        color = "|cffff2020"
+    elseif SAFE_BID_PERCENT > 95 then
+        color = "|cffffd700"
+    else
+        color = "|cff20ff20"
+    end
+    _G[safeBidSlider:GetName() .. "Text"]:SetText(color .. "Safe Bid Percent (" .. SAFE_BID_PERCENT .. "%)|r")
+end
+UpdateSafeBidSliderText()
+
+safeBidSlider:SetScript("OnValueChanged", function(self, value)
+    value = math.floor(value + 0.5)
+    SAFE_BID_PERCENT = value
+    AHBotPriceRecommendDB.safeBidPercent = SAFE_BID_PERCENT
+    UpdateSafeBidSliderText()
+end)
+
+local resetDefaultsButton = CreateFrame("Button", "AHBotPriceRecommendResetDefaultsButton", panel, "UIPanelButtonTemplate")
+resetDefaultsButton:SetPoint("TOPLEFT", safeBidSlider, "BOTTOMLEFT", -4, -24)
+resetDefaultsButton:SetSize(140, 22)
+resetDefaultsButton:SetText("Reset to Defaults")
+local function ResetToDefaults()
+    USE_BUY_PRICE = true
+    SAFE_BID_PERCENT = 95
+    AHBotPriceRecommendDB.useBuyPrice = USE_BUY_PRICE
+    AHBotPriceRecommendDB.safeBidPercent = SAFE_BID_PERCENT
+    panel.refresh()
+end
+resetDefaultsButton:SetScript("OnClick", ResetToDefaults)
+panel.default = ResetToDefaults
+
+panel.refresh = function()
+    useBuyPriceCheck:SetChecked(USE_BUY_PRICE)
+    safeBidSlider:SetValue(SAFE_BID_PERCENT)
+    UpdateSafeBidSliderText()
+end
+panel:SetScript("OnShow", panel.refresh)
+
+InterfaceOptions_AddCategory(panel)
+
+-- Load saved settings
+panel:RegisterEvent("ADDON_LOADED")
+panel:SetScript("OnEvent", function(self, event, addonName)
+    if addonName ~= "AHBotPriceRecommend" then return end
+    self:UnregisterEvent("ADDON_LOADED")
+
+    AHBotPriceRecommendDB = AHBotPriceRecommendDB or {}
+    if AHBotPriceRecommendDB.useBuyPrice == nil then
+        AHBotPriceRecommendDB.useBuyPrice = true
+    end
+    USE_BUY_PRICE = AHBotPriceRecommendDB.useBuyPrice
+
+    if AHBotPriceRecommendDB.safeBidPercent == nil then
+        AHBotPriceRecommendDB.safeBidPercent = 95
+    end
+    SAFE_BID_PERCENT = AHBotPriceRecommendDB.safeBidPercent
+end)
 
 local function FormatMoney(copper)
     if not copper or copper <= 0 then return "0c" end
@@ -53,14 +150,18 @@ local function AttachAHBotPriceRecommend(tooltip)
 
     -- Stack size check in bag
     local count = 1
-    local focus = GetMouseFocus()
-    if focus and focus.count then
-        count = focus.count
+    if tooltip == GameTooltip then
+        local focus = GetMouseFocus()
+        local focusCount = focus and tonumber(focus.count)
+        if focusCount and focusCount > 1 then
+            count = focusCount
+        end
     end
 
-    -- Calculate safe bid prices (95% of max bid)
-    local safeBidSingle = math.floor(singleMaxBid * 0.95)
-    local safeBidStack = math.floor(singleMaxBid * count * 0.95)
+    -- Calculate safe bid prices (SAFE_BID_PERCENT% of max bid)
+    local safeBidRatio = SAFE_BID_PERCENT / 100
+    local safeBidSingle = math.floor(singleMaxBid * safeBidRatio)
+    local safeBidStack = math.floor(singleMaxBid * count * safeBidRatio)
 
     tooltip:AddLine(" ")
     tooltip:AddDoubleLine("|cff00ff00AHPriceRec Buyout:|r", FormatMoney(safeBidSingle))

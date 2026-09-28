@@ -2,7 +2,8 @@
 ## Title: AHBot Price Recommend
 ## Notes: Safe AH sell price for mod-ah-bot.
 ## Author: mustaabey
-## Version: 1.0
+## Version: 1.1
+## SavedVariables: AHBotPriceRecommendDB
 
-BuyPrices.lua
+AHBotPriceRecommend_BuyPrices.lua
 AHBotPriceRecommend.lua

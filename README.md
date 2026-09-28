@@ -29,7 +29,7 @@ maxBid = basePrice * (quality + 2)
   - `USE_BUY_PRICE = false`: the item's vendor `SellPrice`.
 - **quality**: the item's quality (0 = Poor, 1 = Common, 2 = Uncommon, ...).
 
-The recommended price is **95% of `maxBid`**, leaving a small safety margin. For stacks, the value is multiplied by the stack count.
+The recommended price is **Safe Bid Percent of `maxBid`** (95% by default), leaving a small safety margin. For stacks, the value is multiplied by the stack count.
 
 Tooltip lines:
 
@@ -50,14 +50,24 @@ Tooltip lines:
 
 ## Configuration
 
-Open `AHBotPriceRecommend/AHBotPriceRecommend.lua` and set `USE_BUY_PRICE` to match your server's `mod-ah-bot.conf`:
+In game, open **Interface → AddOns → AHBot Price Recommend**.
+
+![Settings panel](docs/settings.png)
+
+### Use vendor Buy Price
+
+Set this to match your server's `mod-ah-bot.conf`:
 
 | `mod-ah-bot.conf` | Addon setting |
 | --- | --- |
-| `AuctionHouseBot.UseBuyPriceForBuyer = 1` | `local USE_BUY_PRICE = true` |
-| `AuctionHouseBot.UseBuyPriceForBuyer = 0` | `local USE_BUY_PRICE = false` |
+| `AuctionHouseBot.UseBuyPriceForBuyer = 1` | Checked (default) |
+| `AuctionHouseBot.UseBuyPriceForBuyer = 0` | Unchecked |
 
-Reload the UI (`/reload`) after changing it.
+### Safe Bid Percent
+
+The percentage of `maxBid` shown as the recommended price. Range is 1%–200%, default is **95%**.
+
+Changes apply right away. They are saved per account in the `AHBotPriceRecommendDB` SavedVariable.
 
 ## License
 
