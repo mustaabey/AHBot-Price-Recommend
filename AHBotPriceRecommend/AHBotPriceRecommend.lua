@@ -61,6 +61,18 @@ safeBidSlider:SetScript("OnValueChanged", function(self, value)
     UpdateSafeBidSliderText()
 end)
 
+local resetDefaultsButton = CreateFrame("Button", "AHBotPriceRecommendResetDefaultsButton", panel, "UIPanelButtonTemplate")
+resetDefaultsButton:SetPoint("TOPLEFT", safeBidSlider, "BOTTOMLEFT", -4, -24)
+resetDefaultsButton:SetSize(140, 22)
+resetDefaultsButton:SetText("Reset to Defaults")
+resetDefaultsButton:SetScript("OnClick", function()
+    USE_BUY_PRICE = true
+    SAFE_BID_PERCENT = 95
+    AHBotPriceRecommendDB.useBuyPrice = USE_BUY_PRICE
+    AHBotPriceRecommendDB.safeBidPercent = SAFE_BID_PERCENT
+    panel.refresh()
+end)
+
 panel.refresh = function()
     useBuyPriceCheck:SetChecked(USE_BUY_PRICE)
     safeBidSlider:SetValue(SAFE_BID_PERCENT)
